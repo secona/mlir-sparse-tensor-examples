@@ -7,12 +7,13 @@
 #include <mlir/ExecutionEngine/SparseTensorRuntime.h>
 #include <string>
 
+// See https://mlir.llvm.org/docs/TargetLLVMIR/#c-compatible-wrapper-emission
 struct MemRefDescriptor2D {
   float *allocated;
   float *aligned;
-  int64_t offset;
-  int64_t sizes[2];
-  int64_t strides[2];
+  intptr_t offset;
+  intptr_t sizes[2];
+  intptr_t strides[2];
 };
 
 extern "C" {

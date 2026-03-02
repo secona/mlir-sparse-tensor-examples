@@ -10,7 +10,7 @@ func.func @tensor_add(%arg0: tensor<32x32xf32, #CSR>) -> tensor<32x32xf32> attri
     permutation = [1, 0]
 
   %result = linalg.add
-    ins(%arg0, %arg0 : tensor<32x32xf32, #CSR>, tensor<32x32xf32, #CSR>)
+    ins(%arg0, %T : tensor<32x32xf32, #CSR>, tensor<32x32xf32, #CSR>)
     outs(%out : tensor<32x32xf32>) -> tensor<32x32xf32>
 
   return %result : tensor<32x32xf32>
