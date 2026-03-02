@@ -20,10 +20,7 @@
 
         hardeningDisable = [ "fortify" ];
 
-        shellHook = let
-          lib = pkgs.lib.makeLibraryPath [ llvm.llvm llvm.mlir ];
-        in ''
-          export LD_LIBRARY_PATH="${lib}:$LD_LIBRARY_PATH"
+        shellHook = ''
           export LLVM_DIR="${llvm.llvm}"
           export MLIR_DIR="${llvm.mlir}"
         '';

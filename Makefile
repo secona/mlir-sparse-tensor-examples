@@ -4,8 +4,14 @@ LLC     = llc
 MLIROPT = mlir-opt
 MLIRTRN = mlir-translate
 
-CXXFLAGS = -std=c++17 -Wall -g -fsanitize=address
-LDFLAGS  = -lmlir_c_runner_utils -lmlir_runner_utils
+LLVM_DIR ?= $(shell llvm-config --prefix 2>/dev/null || echo /usr/local)
+MLIR_DIR ?= $(LLVM_DIR)
+
+MLIR_LIB_DIR = $(MLIR_DIR)/lib
+MLIR_INC_DIR = $(MLIR_DIR)/include
+
+CXXFLAGS = -std=c++17 -Wall -g -fsanitize=address -I$(MLIR_INC_DIR)
+LDFLAGS  = -L$(MLIR_LIB_DIR) -Wl,-rpath,$(MLIR_LIB_DIR) -lmlir_c_runner_utils -lmlir_runner_utils
 
 TARGET = tensor_runner
 
