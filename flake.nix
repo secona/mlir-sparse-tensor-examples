@@ -11,19 +11,32 @@
 
       mkShell = pkgs.mkShell.override { stdenv = llvm.stdenv; };
     in {
-      devShells.${system}.default = mkShell {
-        packages = [
-          llvm.llvm
-          llvm.mlir
-          llvm.clang-tools
-        ];
+      devShells.${system} = {
+        default = mkShell {
+          packages = [
+            llvm.llvm
+            llvm.mlir
+            llvm.clang-tools
+          ];
 
-        hardeningDisable = [ "fortify" ];
+          hardeningDisable = [ "fortify" ];
 
-        shellHook = ''
-          export LLVM_DIR="${llvm.llvm}"
-          export MLIR_DIR="${llvm.mlir}"
-        '';
+          shellHook = ''
+            export LLVM_DIR="${llvm.llvm}"
+            export MLIR_DIR="${llvm.mlir}"
+          '';
+        };
+
+        rocm = mkShell {
+          packages = [
+            llvm.llvm
+            llvm.mlir
+            llvm.clang-tools
+
+            pkgs.rocmPackages.clr
+            pkgs.rocmPackages.rocminfo
+          ];
+        };
       };
     };
 }
