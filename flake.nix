@@ -7,6 +7,11 @@
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
+      cudapkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+        config.cudaSupport = true;
+      };
       llvm = pkgs.llvmPackages_21;
 
       mkShell = pkgs.mkShell.override { stdenv = llvm.stdenv; };
@@ -25,6 +30,16 @@
             export LLVM_DIR="${llvm.llvm}"
             export MLIR_DIR="${llvm.mlir}"
           '';
+        };
+
+        cuda = mkShell {
+          packages = [
+            llvm.llvm
+            llvm.mlir
+            llvm.clang-tools
+
+            cudapkgs.cudaPackages.cudatoolkit
+          ];
         };
 
         rocm = mkShell {
