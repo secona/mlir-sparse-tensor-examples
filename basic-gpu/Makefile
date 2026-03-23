@@ -1,40 +1,39 @@
-CXX     = clang++
-CC      = clang
-LLC     = llc
-MLIROPT = mlir-opt
-MLIRTRN = mlir-translate
+LLVM_ROOT    := /home/guest/llvm-project
+LLVM_BUILD   := $(LLVM_ROOT)/build
+MLIR_INC     := $(LLVM_ROOT)/mlir/include
+MLIR_LIB     := $(LLVM_BUILD)/lib
 
-LLVM_DIR ?= /home/vito/llvm-project/build
-MLIR_DIR ?= $(LLVM_DIR)
+CXX      := clang++
+LLC      := $(LLVM_BUILD)/bin/llc
+MLIROPT  := $(LLVM_BUILD)/bin/mlir-opt
+MLIRTRN  := $(LLVM_BUILD)/bin/mlir-translate
 
-MLIR_LIB_DIR ?= $(MLIR_DIR)/lib
-MLIR_INC_DIR ?= /home/vito/llvm-project/mlir/include
+CXXFLAGS := -std=c++17 -Wall -g -I$(MLIR_INC)
+LDFLAGS  := -L$(MLIR_LIB) -Wl,-rpath,$(MLIR_LIB) \
+            -lmlir_c_runner_utils -lmlir_runner_utils -lmlir_cuda_runtime
 
-CXXFLAGS = -std=c++17 -Wall -g -I$(MLIR_INC_DIR)
-LDFLAGS  = -L$(MLIR_LIB_DIR) -Wl,-rpath,$(MLIR_LIB_DIR) -lmlir_c_runner_utils -lmlir_runner_utils -lmlir_cuda_runtime
+GPU_SPARSIFIER := "enable-gpu-libgen gpu-numthreads=32 gpu-triple=nvptx64-nvidia-cuda \
+                   gpu-chip=sm_75 gpu-features=+ptx80 enable-runtime-library=true \
+                   parallelization-strategy=dense-outer-loop gpu-format=bin"
 
-GPU_SPARSIFIER = enable-gpu-libgen gpu-triple=nvptx64-nvidia-cuda gpu-chip=sm_75 gpu-features=+ptx80 enable-runtime-library=true parallelization-strategy=dense-outer-loop gpu-format=bin
+TARGET := tensor_runner
+OBJS   := main.o tensor_add.o
 
-TARGET = tensor_runner
-
-OBJS = main.o tensor_add.o
+.PHONY: all clean
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $(OBJS) $(LDFLAGS) -o $(TARGET)
-
-main.o: main.cpp
-	$(CXX) $(CXXFLAGS) -c main.cpp -o main.o
+	$(CXX) $(CXXFLAGS) $^ $(LDFLAGS) -o $@
 
 tensor_add_opt.mlir: tensor_add.mlir
-	$(MLIROPT) tensor_add.mlir --sparsifier="$(GPU_SPARSIFIER)" > tensor_add_opt.mlir
+	$(MLIROPT) $< --sparsifier=$(GPU_SPARSIFIER) -o $@
 
 tensor_add.ll: tensor_add_opt.mlir
-	$(MLIRTRN) --mlir-to-llvmir tensor_add_opt.mlir -o tensor_add.ll
+	$(MLIRTRN) --mlir-to-llvmir $< -o $@
 
 tensor_add.o: tensor_add.ll
-	$(LLC) -relocation-model=pic -filetype=obj tensor_add.ll -o tensor_add.o
+	$(LLC) -relocation-model=pic -filetype=obj $< -o $@
 
 clean:
 	rm -f $(OBJS) $(TARGET) tensor_add_opt.mlir tensor_add.ll
