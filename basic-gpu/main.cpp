@@ -7,17 +7,10 @@
 #include <mlir/ExecutionEngine/SparseTensorRuntime.h>
 #include <string>
 
-// See https://mlir.llvm.org/docs/TargetLLVMIR/#c-compatible-wrapper-emission
-struct MemRefDescriptor2D {
-  float *allocated;
-  float *aligned;
-  intptr_t offset;
-  intptr_t sizes[2];
-  intptr_t strides[2];
-};
+typedef StridedMemRefType<float, 2> MemRef2D;
 
 extern "C" {
-void _mlir_ciface_tensor_add(MemRefDescriptor2D *out, void *a);
+void _mlir_ciface_tensor_add(MemRef2D *out, void *a);
 }
 
 void *create_csr_tensor(std::string filename) {
@@ -53,22 +46,30 @@ void *create_csr_tensor(std::string filename) {
 
 int main() {
   void *sparse_tensor_a = create_csr_tensor("ibm32.mtx");
-  MemRefDescriptor2D *out = (MemRefDescriptor2D *)malloc(sizeof(MemRefDescriptor2D));
+  assert(sparse_tensor_a);
+
+  MemRef2D *out = (MemRef2D *)malloc(sizeof(MemRef2D));
 
   _mlir_ciface_tensor_add(out, sparse_tensor_a);
 
   delSparseTensor(sparse_tensor_a);
 
-  for (int i = 0; i < 32; i++) {
-    for (int j = 0; j < 32; j++) {
-      int idx = i * 32 + j;
-      if (out->aligned[idx] == 0)
-        std::cout << "  ";
-      else
-        std::cout << out->aligned[idx] << " ";
+  std::cout << "offset: " << out->offset << "\n";
+  std::cout << "sizes: " << out->sizes[0] << " " << out->sizes[1] << "\n";
+  std::cout << "strides: " << out->strides[0] << " " << out->strides[1] << "\n";
+
+  float *data = out->data;
+
+  for (int i = 0; i < out->sizes[0]; i++) {
+    for (int j = 0; j < out->sizes[1]; j++) {
+      int idx = out->offset + i * out->strides[0] + j * out->strides[1];
+      float val = data[idx];
+
+      if (val) std::cout << val << " ";
+      else std::cout << ". ";
     }
     std::cout << "\n";
   }
 
-  std::free(out->allocated);
+  std::free(out->basePtr);
 }
