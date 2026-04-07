@@ -39,6 +39,9 @@ void *create_csr_tensor(std::string filename) {
       mlir::sparse_tensor::OverheadType::kIndex, valTp,
       mlir::sparse_tensor::Action::kFromReader, reader);
 
+  uint64_t nse = getSparseTensorReaderNSE(reader);
+  std::cout << "non-zeros: " << nse << std::endl;
+
   delSparseTensorReader(reader);
 
   return tensor;
@@ -51,8 +54,6 @@ int main() {
   MemRef2D *out = (MemRef2D *)malloc(sizeof(MemRef2D));
 
   _mlir_ciface_tensor_add(out, sparse_tensor_a);
-
-  delSparseTensor(sparse_tensor_a);
 
   std::cout << "offset: " << out->offset << "\n";
   std::cout << "sizes: " << out->sizes[0] << " " << out->sizes[1] << "\n";
@@ -72,4 +73,5 @@ int main() {
   }
 
   std::free(out->basePtr);
+  delSparseTensor(sparse_tensor_a);
 }
